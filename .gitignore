@@ -45,6 +45,7 @@ ios/Flutter/flutter_export_environment.sh
 
 # Python
 .venv/
+backend/.env
 !uv.lock
 
 # Coverage
