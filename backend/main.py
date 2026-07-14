@@ -47,8 +47,15 @@ class TaskModel(BaseModel):
 
 class TaskCreate(BaseModel):
     title: str
-    priority: str = "medium"
+    notes: str = ""
     status: str = "backlog"
+
+
+class TaskWithSubtasksCreate(BaseModel):
+    title: str
+    notes: str = ""
+    status: str = "backlog"
+    subtasks: list[str] = []
 
 
 class SubtaskCreate(BaseModel):
@@ -114,10 +121,29 @@ async def add_task(body: TaskCreate):
     db = get_db()
     doc = {
         "title": body.title,
-        "priority": body.priority,
+        "notes": body.notes,
         "status": body.status,
         "board_date": today_str(),
         "subtasks": [],
+        "created_at": datetime.utcnow(),
+    }
+    result = await db.tasks.insert_one(doc)
+    doc["_id"] = result.inserted_id
+    return serialize_task(doc)
+
+
+@app.post("/tasks/with-subtasks")
+async def add_task_with_subtasks(body: TaskWithSubtasksCreate):
+    db = get_db()
+    subs = []
+    for content in body.subtasks:
+        subs.append({"_id": ObjectId(), "task_id": "", "content": content})
+    doc = {
+        "title": body.title,
+        "notes": body.notes,
+        "status": body.status,
+        "board_date": today_str(),
+        "subtasks": subs,
         "created_at": datetime.utcnow(),
     }
     result = await db.tasks.insert_one(doc)
