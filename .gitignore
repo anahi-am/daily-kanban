@@ -43,5 +43,9 @@ ios/Flutter/ephemeral
 ios/Flutter/flutter_assets/
 ios/Flutter/flutter_export_environment.sh
 
+# Python
+.venv/
+!uv.lock
+
 # Coverage
 coverage/
