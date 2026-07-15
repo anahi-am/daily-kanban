@@ -12,8 +12,8 @@ Future<void> main() async {
 
 class AppColors {
   static const gradientStart = Color(0xFFFFB73C);
-  static const gradientMid = Color(0xFFFE696C);
-  static const gradientEnd = Color(0xFFFF2F57);
+  static const gradientMid = Color(0xFFFF4D97);
+  static const gradientEnd = Color(0xFFFF69B4);
   static const backlogDot = Color(0xFFFF6B2C);
   static const doneDot = Color(0xFFD63AF0);
   static const urgentDot = Color(0xFFFF2D55);
@@ -270,7 +270,7 @@ class _BoardPageState extends State<BoardPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('Daily Priorities', style: GoogleFonts.figtree(fontWeight: FontWeight.w800)),
+        title: Text('Daily Priorities', style: GoogleFonts.figtree(fontWeight: FontWeight.w800, color: Colors.white)),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -281,61 +281,65 @@ class _BoardPageState extends State<BoardPage> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
-            child: Column(
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(6, 6, 6, 20),
+                child: Column(
                   children: [
-                    Expanded(child: _buildColumn(TaskStatus.backlog)),
-                    Expanded(child: _buildColumn(TaskStatus.done)),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildColumn(TaskStatus.done)),
+                        Expanded(child: _buildColumn(TaskStatus.urgent)),
+                      ],
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildColumn(TaskStatus.light)),
+                        Expanded(child: _buildColumn(TaskStatus.important)),
+                      ],
+                    ),
+                    _buildColumn(TaskStatus.backlog),
                   ],
                 ),
-                _buildColumn(TaskStatus.urgent),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _buildColumn(TaskStatus.light)),
-                    Expanded(child: _buildColumn(TaskStatus.important)),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              Positioned(
+                top: 0,
+                right: 12,
+                child: OutlineCircleButton(onTap: () => _openAddScreen(TaskStatus.light)),
+              ),
+            ],
           ),
         ),
       ),
-      floatingActionButton: OutlineCircleButton(onTap: () => _openAddScreen(TaskStatus.light)),
     );
   }
 
   Widget _buildColumn(TaskStatus status) {
     final columnTasks = _tasksFor(status);
     return Container(
-      height: 320,
-      margin: const EdgeInsets.all(8),
+      height: 300,
+      margin: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
             child: Row(
               children: [
-                Container(width: 8, height: 8, decoration: BoxDecoration(color: status.accent, shape: BoxShape.circle)),
-                const SizedBox(width: 8),
-                Text(status.label, style: GoogleFonts.figtree(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
-                const SizedBox(width: 8),
+                Text(status.label, style: GoogleFonts.figtree(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+                const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(12)),
-                  child: Text('${columnTasks.length}', style: GoogleFonts.figtree(color: Colors.white, fontSize: 12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(10)),
+                  child: Text('${columnTasks.length}', style: GoogleFonts.figtree(color: Colors.white, fontSize: 10)),
                 ),
-                const Spacer(),
-                OutlineCircleButton(size: 26, strokeWidth: 1.5, onTap: () => _openAddScreen(status)),
               ],
             ),
           ),
@@ -346,18 +350,24 @@ class _BoardPageState extends State<BoardPage> {
               builder: (context, candidateData, rejectedData) {
                 final highlighted = candidateData.isNotEmpty;
                 return Container(
-                  margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                  margin: const EdgeInsets.fromLTRB(8, 2, 8, 8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: highlighted ? 0.18 : 0.08),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
-                    borderRadius: BorderRadius.circular(14),
+                    color: Colors.white.withValues(alpha: highlighted ? 0.18 : 0.1),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: columnTasks.isEmpty
                       ? Center(
-                          child: Text('Drop tasks here', style: GoogleFonts.figtree(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+                          child: Text('Drop here', style: GoogleFonts.figtree(color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
                         )
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(8),
+                      : GridView.builder(
+                          padding: const EdgeInsets.all(4),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 1.3,
+                            crossAxisSpacing: 4,
+                            mainAxisSpacing: 4,
+                          ),
                           itemCount: columnTasks.length,
                           itemBuilder: (context, index) => _buildTaskCard(columnTasks[index], status),
                         ),
@@ -371,48 +381,56 @@ class _BoardPageState extends State<BoardPage> {
   }
 
   Widget _buildTaskCard(Task task, TaskStatus status) {
-    final card = Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: ExpansionTile(
-        leading: CircleAvatar(backgroundColor: task.status.accent, radius: 7),
-        title: Text(task.title, style: GoogleFonts.figtree(fontSize: 13, fontWeight: FontWeight.w600)),
+    final card = Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+        borderRadius: BorderRadius.circular(10),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.15),
+            Colors.white.withValues(alpha: 0.06),
+          ],
+        ),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (task.notes.trim().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(task.notes, style: GoogleFonts.figtree(fontSize: 12)),
-              ),
-            ),
-          if (task.subtasks.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: task.subtasks.map((s) {
-                  return Row(
-                    children: [
-                      const Icon(Icons.circle, size: 5),
-                      const SizedBox(width: 6),
-                      Expanded(child: Text(s.content, style: GoogleFonts.figtree(fontSize: 12))),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.urgentDot),
-                onPressed: () => _deleteTask(task),
+              Container(width: 6, height: 6, decoration: BoxDecoration(color: task.status.accent, shape: BoxShape.circle)),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  task.title,
+                  style: GoogleFonts.figtree(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+                  softWrap: true,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          if (task.notes.trim().isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              task.notes,
+              style: GoogleFonts.figtree(fontSize: 9, color: Colors.white70),
+              softWrap: true,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          if (task.subtasks.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              '${task.subtasks.length} subtask${task.subtasks.length > 1 ? 's' : ''}',
+              style: GoogleFonts.figtree(fontSize: 8, color: Colors.white.withValues(alpha: 0.5)),
+            ),
+          ],
         ],
       ),
     );
@@ -420,21 +438,34 @@ class _BoardPageState extends State<BoardPage> {
     final preview = Material(
       color: Colors.transparent,
       child: SizedBox(
-        width: 240,
-        child: Card(
-          child: ListTile(
-            leading: CircleAvatar(backgroundColor: task.status.accent, radius: 7),
-            title: Text(task.title, style: GoogleFonts.figtree(fontSize: 13)),
+        width: 140,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+            borderRadius: BorderRadius.circular(10),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.2),
+                Colors.white.withValues(alpha: 0.08),
+              ],
+            ),
           ),
+          padding: const EdgeInsets.all(8),
+          child: Text(task.title, style: GoogleFonts.figtree(fontSize: 11, color: Colors.white)),
         ),
       ),
     );
 
-    return LongPressDraggable<Task>(
-      data: task,
-      feedback: preview,
-      childWhenDragging: Opacity(opacity: 0.3, child: card),
-      child: card,
+    return GestureDetector(
+      onLongPress: () => _deleteTask(task),
+      child: LongPressDraggable<Task>(
+        data: task,
+        feedback: preview,
+        childWhenDragging: Opacity(opacity: 0.2, child: card),
+        child: card,
+      ),
     );
   }
 }
@@ -511,11 +542,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: titleController,
-                  style: GoogleFonts.figtree(color: Colors.black),
+                  style: GoogleFonts.figtree(color: Colors.white),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Colors.white.withValues(alpha: 0.15),
                     hintText: 'What is on your mind?',
+                    hintStyle: GoogleFonts.figtree(color: Colors.white.withValues(alpha: 0.5)),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                 ),
@@ -524,13 +556,18 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<TaskStatus>(
                       value: selectedStatus,
                       isExpanded: true,
+                      dropdownColor: const Color(0xFFCC4477),
                       items: importanceOptions.map((s) {
-                        return DropdownMenuItem(value: s, child: Text(s.label, style: GoogleFonts.figtree()));
+                        return DropdownMenuItem(value: s, child: Text(s.label, style: GoogleFonts.figtree(color: Colors.white)));
                       }).toList(),
                       onChanged: (value) {
                         if (value != null) setState(() => selectedStatus = value);
@@ -544,11 +581,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 TextField(
                   controller: notesController,
                   maxLines: 5,
-                  style: GoogleFonts.figtree(color: Colors.black),
+                  style: GoogleFonts.figtree(color: Colors.white),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Colors.white.withValues(alpha: 0.15),
                     hintText: 'Write anything...',
+                    hintStyle: GoogleFonts.figtree(color: Colors.white.withValues(alpha: 0.5)),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                 ),
@@ -560,11 +598,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     Expanded(
                       child: TextField(
                         controller: subtaskController,
-                        style: GoogleFonts.figtree(color: Colors.black),
+                        style: GoogleFonts.figtree(color: Colors.white),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Colors.white.withValues(alpha: 0.15),
                           hintText: 'Add a subtask',
+                          hintStyle: GoogleFonts.figtree(color: Colors.white.withValues(alpha: 0.5)),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                         ),
                         onSubmitted: (_) => _addSubtaskToList(),
@@ -595,10 +634,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   child: FilledButton(
                     onPressed: saving ? null : _save,
                     style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.urgentDot,
+                      backgroundColor: Colors.white.withValues(alpha: 0.25),
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                     ),
                     child: Text('Save', style: GoogleFonts.figtree(fontWeight: FontWeight.w700)),
                   ),
