@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
 
-const apiBaseUrl = 'http://localhost:8000';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:share_plus/share_plus.dart' show Share;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,6 +86,12 @@ class Subtask {
   factory Subtask.fromMap(Map<String, dynamic> map) {
     return Subtask(id: map['id'], taskId: map['task_id'] ?? '', content: map['content'] ?? '');
   }
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'task_id': taskId,
+    'content': content,
+  };
 }
 
 class Task {
@@ -114,24 +121,69 @@ class Task {
       subtasks: subtasks,
     );
   }
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'title': title,
+    'notes': notes,
+    'status': status.key,
+    'board_date': '${boardDate.year.toString().padLeft(4, '0')}-${boardDate.month.toString().padLeft(2, '0')}-${boardDate.day.toString().padLeft(2, '0')}',
+    'subtasks': subtasks.map((s) => s.toMap()).toList(),
+  };
 }
 
 class BoardRepository {
-  final Uri _base = Uri.parse(apiBaseUrl);
+  static const _storageKey = 'daily_kanban_tasks';
+  final _random = Random();
+
+  List<Task> _tasks = [];
+  bool _loaded = false;
+
+  Future<void> _load() async {
+    if (_loaded) return;
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(_storageKey);
+    if (data != null) {
+      final List<dynamic> jsonList = jsonDecode(data);
+      _tasks = jsonList.map((json) {
+        final subs = (json['subtasks'] as List)
+            .map((s) => Subtask.fromMap(s as Map<String, dynamic>))
+            .toList();
+        return Task.fromMap(json as Map<String, dynamic>, subs);
+      }).toList();
+    }
+    _loaded = true;
+  }
+
+  Future<void> _save() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = _tasks.map((t) => t.toMap()).toList();
+    await prefs.setString(_storageKey, jsonEncode(jsonList));
+  }
+
+  String _generateId() =>
+      '${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(99999)}';
+
+  String _dateKey(DateTime dt) =>
+      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
 
   Future<void> rollover() async {
-    await http.post(_base.resolve('/rollover'));
+    await _load();
+    final todayKey = _dateKey(DateTime.now());
+    bool changed = false;
+    for (final task in _tasks) {
+      if (_dateKey(task.boardDate) != todayKey && task.status != TaskStatus.done) {
+        task.boardDate = DateTime.now();
+        changed = true;
+      }
+    }
+    if (changed) await _save();
   }
 
   Future<List<Task>> fetchBoard() async {
-    final res = await http.get(_base.resolve('/tasks'));
-    final List<dynamic> data = jsonDecode(res.body);
-    return data.map((json) {
-      final subs = (json['subtasks'] as List)
-          .map((s) => Subtask.fromMap(s as Map<String, dynamic>))
-          .toList();
-      return Task.fromMap(json as Map<String, dynamic>, subs);
-    }).toList();
+    await _load();
+    final todayKey = _dateKey(DateTime.now());
+    return _tasks.where((t) => _dateKey(t.boardDate) == todayKey).toList();
   }
 
   Future<void> addTaskWithSubtasks({
@@ -140,28 +192,52 @@ class BoardRepository {
     required TaskStatus status,
     required List<String> subtaskContents,
   }) async {
-    await http.post(
-      _base.resolve('/tasks/with-subtasks'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'title': title,
-        'notes': notes,
-        'status': status.key,
-        'subtasks': subtaskContents,
-      }),
+    await _load();
+    final id = _generateId();
+    final now = DateTime.now();
+    final task = Task(
+      id: id,
+      title: title,
+      notes: notes,
+      status: status,
+      boardDate: DateTime(now.year, now.month, now.day),
+      subtasks: subtaskContents
+          .map((c) => Subtask(id: _generateId(), taskId: id, content: c))
+          .toList(),
     );
+    _tasks.add(task);
+    await _save();
   }
 
   Future<void> deleteTask(String id) async {
-    await http.delete(_base.resolve('/tasks/$id'));
+    await _load();
+    _tasks.removeWhere((t) => t.id == id);
+    await _save();
   }
 
   Future<void> updateStatus(String id, TaskStatus status) async {
-    await http.patch(
-      _base.resolve('/tasks/$id/status'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'status': status.key}),
-    );
+    await _load();
+    final task = _tasks.firstWhere((t) => t.id == id);
+    task.status = status;
+    await _save();
+  }
+
+  Future<void> updateTask({
+    required String id,
+    required String title,
+    required String notes,
+    required TaskStatus status,
+    required List<String> subtaskContents,
+  }) async {
+    await _load();
+    final task = _tasks.firstWhere((t) => t.id == id);
+    task.title = title;
+    task.notes = notes;
+    task.status = status;
+    task.subtasks = subtaskContents
+        .map((c) => Subtask(id: _generateId(), taskId: id, content: c))
+        .toList();
+    await _save();
   }
 }
 
@@ -180,10 +256,13 @@ class DailyPrioritiesApp extends StatelessWidget {
 }
 
 class OutlineCircleButton extends StatelessWidget {
-  const OutlineCircleButton({super.key, required this.onTap, this.size = 64, this.strokeWidth = 2.5});
+  const OutlineCircleButton({super.key, required this.onTap, this.size = 36, this.strokeWidth = 3, this.color});
   final VoidCallback onTap;
   final double size;
   final double strokeWidth;
+  final Color? color;
+
+  static const gold = Color(0xFFFFB300);
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +277,13 @@ class OutlineCircleButton extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: strokeWidth),
+            color: const Color(0xFFFFB73C).withValues(alpha: 0.25),
+            border: Border.all(color: color ?? gold, width: strokeWidth),
+            boxShadow: [
+              BoxShadow(color: const Color(0xFFFFD700).withValues(alpha: 0.5), blurRadius: 12, offset: const Offset(0, 4)),
+              BoxShadow(color: const Color(0xFFFFB300).withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 6)),
+              BoxShadow(color: const Color(0xFFFFFF00).withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 8)),
+            ],
           ),
         ),
       ),
@@ -247,6 +332,14 @@ class _BoardPageState extends State<BoardPage> {
     if (saved == true) await _refresh();
   }
 
+  Future<void> _openEditScreen(Task task) async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => AddTaskScreen(repo: repo, initialStatus: task.status, editTask: task)),
+    );
+    if (saved == true) await _refresh();
+  }
+
   Future<void> _deleteTask(Task task) async {
     await repo.deleteTask(task.id);
     await _refresh();
@@ -266,12 +359,6 @@ class _BoardPageState extends State<BoardPage> {
     }
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text('Daily Priorities', style: GoogleFonts.figtree(fontWeight: FontWeight.w800, color: Colors.white)),
-      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -281,36 +368,38 @@ class _BoardPageState extends State<BoardPage> {
           ),
         ),
         child: SafeArea(
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(6, 6, 6, 20),
-                child: Column(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(6, 6, 6, 20),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
+                  child: Row(
+                    children: [
+                      Text('Daily Priorities', style: GoogleFonts.figtree(fontWeight: FontWeight.w800, fontSize: 22, color: Colors.white)),
+                      const Spacer(),
+                      OutlineCircleButton(onTap: () => _openAddScreen(TaskStatus.light)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildColumn(TaskStatus.done)),
-                        Expanded(child: _buildColumn(TaskStatus.urgent)),
-                      ],
-                    ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildColumn(TaskStatus.light)),
-                        Expanded(child: _buildColumn(TaskStatus.important)),
-                      ],
-                    ),
-                    _buildColumn(TaskStatus.backlog),
+                    Expanded(child: _buildColumn(TaskStatus.done)),
+                    Expanded(child: _buildColumn(TaskStatus.urgent)),
                   ],
                 ),
-              ),
-              Positioned(
-                top: 0,
-                right: 12,
-                child: OutlineCircleButton(onTap: () => _openAddScreen(TaskStatus.light)),
-              ),
-            ],
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildColumn(TaskStatus.light)),
+                    Expanded(child: _buildColumn(TaskStatus.important)),
+                  ],
+                ),
+                _buildColumn(TaskStatus.backlog),
+              ],
+            ),
           ),
         ),
       ),
@@ -459,6 +548,7 @@ class _BoardPageState extends State<BoardPage> {
     );
 
     return GestureDetector(
+      onTap: () => _openEditScreen(task),
       onLongPress: () => _deleteTask(task),
       child: LongPressDraggable<Task>(
         data: task,
@@ -471,9 +561,10 @@ class _BoardPageState extends State<BoardPage> {
 }
 
 class AddTaskScreen extends StatefulWidget {
-  const AddTaskScreen({super.key, required this.repo, required this.initialStatus});
+  const AddTaskScreen({super.key, required this.repo, required this.initialStatus, this.editTask});
   final BoardRepository repo;
   final TaskStatus initialStatus;
+  final Task? editTask;
 
   @override
   State<AddTaskScreen> createState() => _AddTaskScreenState();
@@ -490,6 +581,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   @override
   void initState() {
     super.initState();
+    final task = widget.editTask;
+    if (task != null) {
+      titleController.text = task.title;
+      notesController.text = task.notes;
+      subtasks.addAll(task.subtasks.map((s) => s.content));
+    }
     selectedStatus = importanceOptions.contains(widget.initialStatus) ? widget.initialStatus : TaskStatus.light;
   }
 
@@ -502,28 +599,62 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     });
   }
 
+  Future<void> _confirmDeleteInEdit() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFCC4477),
+        title: Text('Delete task', style: GoogleFonts.figtree(color: Colors.white)),
+        content: Text('Delete "${widget.editTask!.title}"?', style: GoogleFonts.figtree(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Cancel', style: GoogleFonts.figtree(color: Colors.white))),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Delete', style: GoogleFonts.figtree(color: Colors.white))),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await widget.repo.deleteTask(widget.editTask!.id);
+      if (mounted) Navigator.pop(context, true);
+    }
+  }
+
+  void _shareTask() {
+    final title = titleController.text.trim();
+    final notes = notesController.text.trim();
+    final subtaskList = subtasks.map((s) => '  - $s').join('\n');
+    final text = StringBuffer('📌 $title\n');
+    if (notes.isNotEmpty) text.write('\n$notes\n');
+    if (subtaskList.isNotEmpty) text.write('\n$subtaskList');
+    Share.share(text.toString());
+  }
+
   Future<void> _save() async {
     if (titleController.text.trim().isEmpty) return;
     setState(() => saving = true);
-    await widget.repo.addTaskWithSubtasks(
-      title: titleController.text.trim(),
-      notes: notesController.text.trim(),
-      status: selectedStatus,
-      subtaskContents: subtasks,
-    );
+    final task = widget.editTask;
+    if (task != null) {
+      await widget.repo.updateTask(
+        id: task.id,
+        title: titleController.text.trim(),
+        notes: notesController.text.trim(),
+        status: selectedStatus,
+        subtaskContents: subtasks,
+      );
+    } else {
+      await widget.repo.addTaskWithSubtasks(
+        title: titleController.text.trim(),
+        notes: notesController.text.trim(),
+        status: selectedStatus,
+        subtaskContents: subtasks,
+      );
+    }
     if (mounted) Navigator.pop(context, true);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.white,
-        title: Text('New task', style: GoogleFonts.figtree(fontWeight: FontWeight.w700)),
-      ),
+      backgroundColor: Colors.transparent,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -533,15 +664,43 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 90, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(widget.editTask != null ? 'Edit task' : 'New task', style: GoogleFonts.figtree(fontWeight: FontWeight.w700, fontSize: 22, color: Colors.white)),
+                    const Spacer(),
+                    if (widget.editTask != null) ...[
+                      IconButton(
+                        icon: Icon(Icons.check, size: 20, color: Colors.white.withValues(alpha: 0.9)),
+                        onPressed: _save,
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.share, size: 18, color: Colors.white.withValues(alpha: 0.8)),
+                        onPressed: _shareTask,
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete_outline, size: 20, color: Colors.white.withValues(alpha: 0.7)),
+                        onPressed: () => _confirmDeleteInEdit(),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 20),
                 Text('Task name', style: GoogleFonts.figtree(color: Colors.white, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: titleController,
+                  cursorColor: const Color(0xFFFFB6C1),
+                  cursorWidth: 3,
                   style: GoogleFonts.figtree(color: Colors.white),
                   decoration: InputDecoration(
                     filled: true,
@@ -554,25 +713,44 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 const SizedBox(height: 20),
                 Text('Importance', style: GoogleFonts.figtree(color: Colors.white, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<TaskStatus>(
-                      value: selectedStatus,
-                      isExpanded: true,
-                      dropdownColor: const Color(0xFFCC4477),
-                      items: importanceOptions.map((s) {
-                        return DropdownMenuItem(value: s, child: Text(s.label, style: GoogleFonts.figtree(color: Colors.white)));
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) setState(() => selectedStatus = value);
-                      },
+                Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: DropdownMenu<TaskStatus>(
+                    initialSelection: selectedStatus,
+                    expandedInsets: EdgeInsets.zero,
+                    textStyle: GoogleFonts.figtree(color: Colors.white),
+                    inputDecorationTheme: InputDecorationTheme(
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.15),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      suffixIconColor: Colors.white,
                     ),
+                    menuStyle: MenuStyle(
+                      elevation: WidgetStateProperty.all(0),
+                      shadowColor: WidgetStateProperty.all(Colors.transparent),
+                      backgroundColor: WidgetStateProperty.all(Colors.transparent),
+                      shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    ),
+                    dropdownMenuEntries: importanceOptions.map((s) {
+                      final itemColors = <TaskStatus, Color>{
+                        TaskStatus.light: const Color(0xFFFFD700),
+                        TaskStatus.important: const Color(0xFFFF6B2C),
+                        TaskStatus.urgent: const Color(0xFFFF2D55),
+                      };
+                      return DropdownMenuEntry<TaskStatus>(
+                        value: s,
+                        label: s.label,
+                        style: ButtonStyle(
+                          backgroundColor: WidgetStateProperty.all(itemColors[s]!.withValues(alpha: 0.7)),
+                          foregroundColor: WidgetStateProperty.all(Colors.white),
+                          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 4)),
+                          shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                        ),
+                      );
+                    }).toList(),
+                    onSelected: (value) {
+                      if (value != null) setState(() => selectedStatus = value);
+                    },
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -581,6 +759,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 TextField(
                   controller: notesController,
                   maxLines: 5,
+                  cursorColor: const Color(0xFFFFB6C1),
+                  cursorWidth: 3,
                   style: GoogleFonts.figtree(color: Colors.white),
                   decoration: InputDecoration(
                     filled: true,
@@ -598,6 +778,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     Expanded(
                       child: TextField(
                         controller: subtaskController,
+                        cursorColor: const Color(0xFFFFB6C1),
+                        cursorWidth: 3,
                         style: GoogleFonts.figtree(color: Colors.white),
                         decoration: InputDecoration(
                           filled: true,
@@ -610,7 +792,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    OutlineCircleButton(size: 44, strokeWidth: 2, onTap: _addSubtaskToList),
+                    OutlineCircleButton(onTap: _addSubtaskToList),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -644,10 +826,15 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   ),
                 ),
               ],
-            ),
-          ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
+      ),
       ),
     );
   }
 }
+
