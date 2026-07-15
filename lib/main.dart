@@ -377,6 +377,7 @@ class _BoardPageState extends State<BoardPage> {
                   child: Row(
                     children: [
                       Text('Daily Priorities', style: GoogleFonts.figtree(fontWeight: FontWeight.w800, fontSize: 22, color: Colors.white)),
+                      Text(' ☀️', style: GoogleFonts.figtree(fontWeight: FontWeight.w800, fontSize: 22, color: Colors.white)),
                       const Spacer(),
                       OutlineCircleButton(onTap: () => _openAddScreen(TaskStatus.light)),
                     ],

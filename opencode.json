@@ -1,0 +1,21 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "autoupdate": "notify",
+  "permission": {
+    "read": "ask",
+    "edit": "ask",
+    "glob": "ask",
+    "grep": "ask",
+    "list": "ask",
+    "bash": "ask",
+    "task": "ask",
+    "external_directory": "ask",
+    "todowrite": "ask",
+    "question": "ask",
+    "webfetch": "ask",
+    "websearch": "ask",
+    "lsp": "ask",
+    "doom_loop": "ask",
+    "skill": "ask"
+  }
+}
