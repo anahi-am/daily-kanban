@@ -1,6 +1,6 @@
 # DailyKanban
 
-A simple, lightweight daily task organizer — local, fast, and easy to use.
+A simple, lightweight daily task organizer. Local and easy to use.
 
 A Flutter kanban board for daily task prioritization.
 
