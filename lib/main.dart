@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -715,10 +715,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final text = StringBuffer('📌 $title\n');
     if (notes.isNotEmpty) text.write('\n$notes\n');
     if (subtaskList.isNotEmpty) text.write('\n$subtaskList');
-    Clipboard.setData(ClipboardData(text: text.toString()));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Copied to clipboard', style: GoogleFonts.figtree(color: Colors.white)), backgroundColor: Colors.black54, duration: Duration(seconds: 2)),
-    );
+    Share.share(text.toString());
   }
 
   Future<void> _save() async {
