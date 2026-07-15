@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -174,6 +175,7 @@ class BoardRepository {
     for (final task in _tasks) {
       if (_dateKey(task.boardDate) != todayKey && task.status != TaskStatus.done) {
         task.boardDate = DateTime.now();
+        task.status = TaskStatus.backlog;
         changed = true;
       }
     }
@@ -302,6 +304,7 @@ class _BoardPageState extends State<BoardPage> {
   final repo = BoardRepository();
   List<Task> tasks = [];
   bool loading = true;
+  Timer? _midnightTimer;
 
   @override
   void initState() {
@@ -309,9 +312,28 @@ class _BoardPageState extends State<BoardPage> {
     _init();
   }
 
+  @override
+  void dispose() {
+    _midnightTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _init() async {
     await repo.rollover();
     await _refresh();
+    _scheduleMidnightRollover();
+  }
+
+  void _scheduleMidnightRollover() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    final duration = nextMidnight.difference(now);
+    _midnightTimer = Timer(duration, () async {
+      await repo.rollover();
+      await _refresh();
+      _scheduleMidnightRollover();
+    });
   }
 
   Future<void> _refresh() async {
