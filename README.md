@@ -4,6 +4,14 @@ A simple, lightweight daily task organizer. Local and easy to use.
 
 A Flutter kanban board for daily task prioritization.
 
+## Screenshots
+
+<p float="left">
+  <img src="screenshots/main.jpg" width="250">
+  <img src="screenshots/edit_task.jpg" width="250">
+  <img src="screenshots/blue_mode.jpg" width="250">
+</p>
+
 ## Features
 
 - **5-column kanban** — Backlog, Light, Important, Urgent, Done
