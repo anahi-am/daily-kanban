@@ -2,25 +2,72 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:share_plus/share_plus.dart' show Share;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  theme = prefs.getBool('cool_theme') == true ? AppColors.cool : AppColors.warm;
   runApp(const DailyPrioritiesApp());
 }
 
+_ThemeColors theme = AppColors.warm;
+
 class AppColors {
-  static const gradientStart = Color(0xFFFFB73C);
-  static const gradientMid = Color(0xFFFF4D97);
-  static const gradientEnd = Color(0xFFFF69B4);
-  static const backlogDot = Color(0xFFFF6B2C);
-  static const doneDot = Color(0xFFD63AF0);
-  static const urgentDot = Color(0xFFFF2D55);
-  static const lightDot = Color(0xFFFFB020);
-  static const importantDot = Color(0xFFFF4D97);
+  static const warm = _ThemeColors(
+    gradientStart: Color(0xFFFFB73C),
+    gradientMid: Color(0xFFFF4D97),
+    gradientEnd: Color(0xFFFF69B4),
+    backlogDot: Color(0xFFFF6B2C),
+    doneDot: Color(0xFFD63AF0),
+    urgentDot: Color(0xFFFF2D55),
+    lightDot: Color(0xFFFFB020),
+    importantDot: Color(0xFFFF4D97),
+    outlineGold: Color(0xFFFFB300),
+    outlineBg: Color(0xFFFFB73C),
+  );
+
+  static const cool = _ThemeColors(
+    gradientStart: Color(0xFF66BB6A),
+    gradientMid: Color(0xFF26C6DA),
+    gradientEnd: Color(0xFF42A5F5),
+    backlogDot: Color(0xFF2E7D32),
+    doneDot: Color(0xFF5C6BC0),
+    urgentDot: Color(0xFF1E88E5),
+    lightDot: Color(0xFF81C784),
+    importantDot: Color(0xFF00ACC1),
+    outlineGold: Color(0xFF42A5F5),
+    outlineBg: Color(0xFF66BB6A),
+  );
+}
+
+class _ThemeColors {
+  const _ThemeColors({
+    required this.gradientStart,
+    required this.gradientMid,
+    required this.gradientEnd,
+    required this.backlogDot,
+    required this.doneDot,
+    required this.urgentDot,
+    required this.lightDot,
+    required this.importantDot,
+    required this.outlineGold,
+    required this.outlineBg,
+  });
+
+  final Color gradientStart;
+  final Color gradientMid;
+  final Color gradientEnd;
+  final Color backlogDot;
+  final Color doneDot;
+  final Color urgentDot;
+  final Color lightDot;
+  final Color importantDot;
+  final Color outlineGold;
+  final Color outlineBg;
 }
 
 enum TaskStatus { backlog, light, important, urgent, done }
@@ -59,15 +106,15 @@ extension TaskStatusX on TaskStatus {
   Color get accent {
     switch (this) {
       case TaskStatus.backlog:
-        return AppColors.backlogDot;
+        return theme.backlogDot;
       case TaskStatus.light:
-        return AppColors.lightDot;
+        return theme.lightDot;
       case TaskStatus.important:
-        return AppColors.importantDot;
+        return theme.importantDot;
       case TaskStatus.urgent:
-        return AppColors.urgentDot;
+        return theme.urgentDot;
       case TaskStatus.done:
-        return AppColors.doneDot;
+        return theme.doneDot;
     }
   }
 
@@ -248,7 +295,7 @@ class DailyPrioritiesApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = ThemeData(useMaterial3: true, colorSchemeSeed: AppColors.urgentDot);
+    final base = ThemeData(useMaterial3: true, colorSchemeSeed: theme.urgentDot);
     return MaterialApp(
       title: 'Daily Priorities',
       theme: base.copyWith(textTheme: GoogleFonts.figtreeTextTheme(base.textTheme)),
@@ -264,10 +311,9 @@ class OutlineCircleButton extends StatelessWidget {
   final double strokeWidth;
   final Color? color;
 
-  static const gold = Color(0xFFFFB300);
-
   @override
   Widget build(BuildContext context) {
+    final gold = color ?? theme.outlineGold;
     return Material(
       color: Colors.transparent,
       shape: const CircleBorder(),
@@ -279,12 +325,12 @@ class OutlineCircleButton extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFFFFB73C).withValues(alpha: 0.25),
-            border: Border.all(color: color ?? gold, width: strokeWidth),
+            color: theme.outlineBg.withValues(alpha: 0.25),
+            border: Border.all(color: gold, width: strokeWidth),
             boxShadow: [
-              BoxShadow(color: const Color(0xFFFFD700).withValues(alpha: 0.5), blurRadius: 12, offset: const Offset(0, 4)),
-              BoxShadow(color: const Color(0xFFFFB300).withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 6)),
-              BoxShadow(color: const Color(0xFFFFFF00).withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 8)),
+              BoxShadow(color: gold.withValues(alpha: 0.5), blurRadius: 12, offset: const Offset(0, 4)),
+              BoxShadow(color: gold.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 6)),
+              BoxShadow(color: gold.withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 8)),
             ],
           ),
         ),
@@ -322,6 +368,14 @@ class _BoardPageState extends State<BoardPage> {
     await repo.rollover();
     await _refresh();
     _scheduleMidnightRollover();
+  }
+
+  Future<void> _toggleTheme() async {
+    final isCool = theme == AppColors.cool;
+    theme = isCool ? AppColors.warm : AppColors.cool;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('cool_theme', !isCool);
+    setState(() {});
   }
 
   void _scheduleMidnightRollover() {
@@ -382,11 +436,11 @@ class _BoardPageState extends State<BoardPage> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppColors.gradientStart, AppColors.gradientMid, AppColors.gradientEnd],
+            colors: [theme.gradientStart, theme.gradientMid, theme.gradientEnd],
           ),
         ),
         child: SafeArea(
@@ -399,9 +453,22 @@ class _BoardPageState extends State<BoardPage> {
                   child: Row(
                     children: [
                       Text('Daily Priorities', style: GoogleFonts.figtree(fontWeight: FontWeight.w800, fontSize: 22, color: Colors.white)),
-                      Text(' ☀️', style: GoogleFonts.figtree(fontWeight: FontWeight.w800, fontSize: 22, color: Colors.white)),
+                      Text(theme == AppColors.cool ? ' 🌿' : ' ☀️', style: GoogleFonts.figtree(fontWeight: FontWeight.w800, fontSize: 22, color: Colors.white)),
                       const Spacer(),
                       OutlineCircleButton(onTap: () => _openAddScreen(TaskStatus.light)),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: _toggleTheme,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                          child: Icon(Icons.palette, size: 18, color: Colors.white.withValues(alpha: 0.8)),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -626,7 +693,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFFCC4477),
+        backgroundColor: theme.gradientMid,
         title: Text('Delete task', style: GoogleFonts.figtree(color: Colors.white)),
         content: Text('Delete "${widget.editTask!.title}"?', style: GoogleFonts.figtree(color: Colors.white70)),
         actions: [
@@ -648,7 +715,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final text = StringBuffer('📌 $title\n');
     if (notes.isNotEmpty) text.write('\n$notes\n');
     if (subtaskList.isNotEmpty) text.write('\n$subtaskList');
-    Share.share(text.toString());
+    Clipboard.setData(ClipboardData(text: text.toString()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Copied to clipboard', style: GoogleFonts.figtree(color: Colors.white)), backgroundColor: Colors.black54, duration: Duration(seconds: 2)),
+    );
   }
 
   Future<void> _save() async {
@@ -679,11 +749,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppColors.gradientStart, AppColors.gradientMid, AppColors.gradientEnd],
+            colors: [theme.gradientStart, theme.gradientMid, theme.gradientEnd],
           ),
         ),
         child: SafeArea(
@@ -756,9 +826,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     ),
                     dropdownMenuEntries: importanceOptions.map((s) {
                       final itemColors = <TaskStatus, Color>{
-                        TaskStatus.light: const Color(0xFFFFD700),
-                        TaskStatus.important: const Color(0xFFFF6B2C),
-                        TaskStatus.urgent: const Color(0xFFFF2D55),
+                        TaskStatus.light: theme.lightDot,
+                        TaskStatus.important: theme.importantDot,
+                        TaskStatus.urgent: theme.urgentDot,
                       };
                       return DropdownMenuEntry<TaskStatus>(
                         value: s,
