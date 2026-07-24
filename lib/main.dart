@@ -21,7 +21,7 @@ class AppColors {
     gradientStart: Color(0xFFFFB73C),
     gradientMid: Color(0xFFFF4D97),
     gradientEnd: Color(0xFFFF69B4),
-    backlogDot: Color(0xFFFF6B2C),
+    achievementsDot: Color(0xFFFF6B2C),
     doneDot: Color(0xFFD63AF0),
     urgentDot: Color(0xFFFF2D55),
     lightDot: Color(0xFFFFB020),
@@ -34,7 +34,7 @@ class AppColors {
     gradientStart: Color(0xFF66BB6A),
     gradientMid: Color(0xFF26C6DA),
     gradientEnd: Color(0xFF42A5F5),
-    backlogDot: Color(0xFF2E7D32),
+    achievementsDot: Color(0xFF2E7D32),
     doneDot: Color(0xFF5C6BC0),
     urgentDot: Color(0xFF1E88E5),
     lightDot: Color(0xFF81C784),
@@ -49,7 +49,7 @@ class _ThemeColors {
     required this.gradientStart,
     required this.gradientMid,
     required this.gradientEnd,
-    required this.backlogDot,
+    required this.achievementsDot,
     required this.doneDot,
     required this.urgentDot,
     required this.lightDot,
@@ -61,7 +61,7 @@ class _ThemeColors {
   final Color gradientStart;
   final Color gradientMid;
   final Color gradientEnd;
-  final Color backlogDot;
+  final Color achievementsDot;
   final Color doneDot;
   final Color urgentDot;
   final Color lightDot;
@@ -70,13 +70,13 @@ class _ThemeColors {
   final Color outlineBg;
 }
 
-enum TaskStatus { backlog, light, important, urgent, done }
+enum TaskStatus { achievements, light, important, urgent, done }
 
 extension TaskStatusX on TaskStatus {
   String get key {
     switch (this) {
-      case TaskStatus.backlog:
-        return 'backlog';
+      case TaskStatus.achievements:
+        return 'achievements';
       case TaskStatus.light:
         return 'light';
       case TaskStatus.important:
@@ -90,8 +90,8 @@ extension TaskStatusX on TaskStatus {
 
   String get label {
     switch (this) {
-      case TaskStatus.backlog:
-        return 'Backlog';
+      case TaskStatus.achievements:
+        return 'Achievements';
       case TaskStatus.light:
         return 'Light';
       case TaskStatus.important:
@@ -105,8 +105,8 @@ extension TaskStatusX on TaskStatus {
 
   Color get accent {
     switch (this) {
-      case TaskStatus.backlog:
-        return theme.backlogDot;
+      case TaskStatus.achievements:
+        return theme.achievementsDot;
       case TaskStatus.light:
         return theme.lightDot;
       case TaskStatus.important:
@@ -119,7 +119,7 @@ extension TaskStatusX on TaskStatus {
   }
 
   static TaskStatus fromKey(String value) {
-    return TaskStatus.values.firstWhere((s) => s.key == value, orElse: () => TaskStatus.backlog);
+    return TaskStatus.values.firstWhere((s) => s.key == value, orElse: () => TaskStatus.achievements);
   }
 }
 
@@ -220,9 +220,11 @@ class BoardRepository {
     final todayKey = _dateKey(DateTime.now());
     bool changed = false;
     for (final task in _tasks) {
-      if (_dateKey(task.boardDate) != todayKey && task.status != TaskStatus.done) {
+      if (_dateKey(task.boardDate) != todayKey) {
         task.boardDate = DateTime.now();
-        task.status = TaskStatus.backlog;
+        if (task.status == TaskStatus.done) {
+          task.status = TaskStatus.achievements;
+        }
         changed = true;
       }
     }
@@ -351,6 +353,7 @@ class _BoardPageState extends State<BoardPage> {
   List<Task> tasks = [];
   bool loading = true;
   Timer? _midnightTimer;
+  final Set<String> _checkedSubtasks = <String>{};
 
   @override
   void initState() {
@@ -453,7 +456,6 @@ class _BoardPageState extends State<BoardPage> {
                   child: Row(
                     children: [
                       Text('Daily Priorities', style: GoogleFonts.figtree(fontWeight: FontWeight.w800, fontSize: 22, color: Colors.white)),
-                      Text(theme == AppColors.cool ? ' 🌿' : ' ☀️', style: GoogleFonts.figtree(fontWeight: FontWeight.w800, fontSize: 22, color: Colors.white)),
                       const Spacer(),
                       OutlineCircleButton(onTap: () => _openAddScreen(TaskStatus.light)),
                       const SizedBox(width: 8),
@@ -487,7 +489,7 @@ class _BoardPageState extends State<BoardPage> {
                     Expanded(child: _buildColumn(TaskStatus.important)),
                   ],
                 ),
-                _buildColumn(TaskStatus.backlog),
+                _buildColumn(TaskStatus.achievements),
               ],
             ),
           ),
@@ -605,10 +607,42 @@ class _BoardPageState extends State<BoardPage> {
           ],
           if (task.subtasks.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text(
-              '${task.subtasks.length} subtask${task.subtasks.length > 1 ? 's' : ''}',
-              style: GoogleFonts.figtree(fontSize: 8, color: Colors.white.withValues(alpha: 0.5)),
-            ),
+            ...task.subtasks.map((subtask) {
+              final checked = _checkedSubtasks.contains(subtask.id);
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    if (checked) {
+                      _checkedSubtasks.remove(subtask.id);
+                    } else {
+                      _checkedSubtasks.add(subtask.id);
+                    }
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Row(
+                    children: [
+                      Icon(
+                        checked ? Icons.check_box : Icons.check_box_outline_blank,
+                        size: 12,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          subtask.content,
+                          style: GoogleFonts.figtree(fontSize: 9, color: Colors.white70),
+                          softWrap: true,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ],
         ],
       ),
