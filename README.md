@@ -20,8 +20,8 @@ One example is the primary action button. Instead of the traditional floating "+
 
 - **5-card kanban**: Achievements, Light, Important, Urgent, Done
 - **Drag & drop**: Move tasks between cards.
-- **Dual themes**: Toggle between cool (green/blue) and warm (yellow/pink) gradients, persisted to device.
-- **Task editor** — add/edit tasks with notes, subtasks, and importance level
+- **Dual themes**: Toggle between warm (dusty rose → lavender) and cool (soft teal → periwinkle) gradients, persisted to device.
+- **Task editor**: Add/edit tasks with notes, subtasks, and importance level.
 - **Midnight rollover**: Completed tasks move to Achievements; incomplete tasks persist.
 - **100% local**: All data is stored on-device via SharedPreferences, no server or account needed.
 - **Native share**: Export tasks to any app via the system share sheet.
@@ -34,17 +34,9 @@ One example is the primary action button. Instead of the traditional floating "+
 - **Edit & delete**: Tap a task to open it; use ✓ to save or 🗑️ to delete.
 - **Subtasks**: Press the outline circle to add subtasks, then tap the checkbox to mark done.
 - **Share**: Export any task via your phone's native share sheet.
-- **Toggle theme**: Tap the palette icon to switch between the cool and warm themes.
+- **Toggle theme**: Tap the palette icon to switch between warm (dusty rose) and cool (soft teal) themes.
 - **See your wins**: Completed tasks move to Achievements at midnight, so you can see what you have accomplished.
 - **Persist across days**: Incomplete tasks stay in their cards. Ready to continue tomorrow, no pressure.
-
-## Screenshots
-
-<p float="left">
-  <img src="screenshots/main.jpg" width="250">
-  <img src="screenshots/edit_task.jpg" width="250">
-  <img src="screenshots/blue_mode.jpg" width="250">
-</p>
 
 ## Build
 

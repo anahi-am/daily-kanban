@@ -7,6 +7,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const Color _textColor = Color(0xFF4A4A4A);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
@@ -18,29 +20,29 @@ _ThemeColors theme = AppColors.warm;
 
 class AppColors {
   static const warm = _ThemeColors(
-    gradientStart: Color(0xFFFFB73C),
-    gradientMid: Color(0xFFFF4D97),
-    gradientEnd: Color(0xFFFF69B4),
-    achievementsDot: Color(0xFFFF6B2C),
-    doneDot: Color(0xFFD63AF0),
-    urgentDot: Color(0xFFFF2D55),
-    lightDot: Color(0xFFFFB020),
-    importantDot: Color(0xFFFF4D97),
-    outlineGold: Color(0xFFFFB300),
-    outlineBg: Color(0xFFFFB73C),
+    gradientStart: Color(0xFFE8A0A8),
+    gradientMid: Color(0xFFB098C8),
+    gradientEnd: Color(0xFFB098C8),
+    achievementsDot: Color(0xFFB098C8),
+    doneDot: Color(0xFF7B9CC8),
+    urgentDot: Color(0xFFE8A0A8),
+    lightDot: Color(0xFFB098C8),
+    importantDot: Color(0xFF5BB8B8),
+    outlineGold: Color(0xFFB098C8),
+    outlineBg: Color(0xFF5BB8B8),
   );
 
   static const cool = _ThemeColors(
-    gradientStart: Color(0xFF66BB6A),
-    gradientMid: Color(0xFF26C6DA),
-    gradientEnd: Color(0xFF42A5F5),
-    achievementsDot: Color(0xFF2E7D32),
-    doneDot: Color(0xFF5C6BC0),
-    urgentDot: Color(0xFF1E88E5),
-    lightDot: Color(0xFF81C784),
-    importantDot: Color(0xFF00ACC1),
-    outlineGold: Color(0xFF42A5F5),
-    outlineBg: Color(0xFF66BB6A),
+    gradientStart: Color(0xFF5BB8B8),
+    gradientMid: Color(0xFF7B9CC8),
+    gradientEnd: Color(0xFF7B9CC8),
+    achievementsDot: Color(0xFFB098C8),
+    doneDot: Color(0xFF7B9CC8),
+    urgentDot: Color(0xFFE8A0A8),
+    lightDot: Color(0xFFB098C8),
+    importantDot: Color(0xFF5BB8B8),
+    outlineGold: Color(0xFFB098C8),
+    outlineBg: Color(0xFFE8A0A8),
   );
 }
 
@@ -455,7 +457,7 @@ class _BoardPageState extends State<BoardPage> {
                   padding: const EdgeInsets.fromLTRB(10, 6, 10, 0),
                   child: Row(
                     children: [
-                      Text('Daily Priorities', style: GoogleFonts.figtree(fontWeight: FontWeight.w800, fontSize: 22, color: Colors.white)),
+                      Text('Daily Priorities', style: GoogleFonts.figtree(fontWeight: FontWeight.w800, fontSize: 22, color: _textColor)),
                       const Spacer(),
                       OutlineCircleButton(onTap: () => _openAddScreen(TaskStatus.light)),
                       const SizedBox(width: 8),
@@ -514,12 +516,12 @@ class _BoardPageState extends State<BoardPage> {
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
             child: Row(
               children: [
-                Text(status.label, style: GoogleFonts.figtree(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+                Text(status.label, style: GoogleFonts.figtree(color: _textColor, fontWeight: FontWeight.w700, fontSize: 13)),
                 const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(10)),
-                  child: Text('${columnTasks.length}', style: GoogleFonts.figtree(color: Colors.white, fontSize: 10)),
+                  child: Text('${columnTasks.length}', style: GoogleFonts.figtree(color: _textColor, fontSize: 10)),
                 ),
               ],
             ),
@@ -539,7 +541,7 @@ class _BoardPageState extends State<BoardPage> {
                   ),
                   child: columnTasks.isEmpty
                       ? Center(
-                          child: Text('Drop here', style: GoogleFonts.figtree(color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
+                          child: Text('Drop here', style: GoogleFonts.figtree(color: _textColor.withValues(alpha: 0.5), fontSize: 11)),
                         )
                       : GridView.builder(
                           padding: const EdgeInsets.all(4),
@@ -587,7 +589,7 @@ class _BoardPageState extends State<BoardPage> {
               Expanded(
                 child: Text(
                   task.title,
-                  style: GoogleFonts.figtree(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: GoogleFonts.figtree(fontSize: 11, fontWeight: FontWeight.w600, color: _textColor),
                   softWrap: true,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -599,7 +601,7 @@ class _BoardPageState extends State<BoardPage> {
             const SizedBox(height: 4),
             Text(
               task.notes,
-              style: GoogleFonts.figtree(fontSize: 9, color: Colors.white70),
+              style: GoogleFonts.figtree(fontSize: 9, color: _textColor.withValues(alpha: 0.7)),
               softWrap: true,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -626,13 +628,13 @@ class _BoardPageState extends State<BoardPage> {
                       Icon(
                         checked ? Icons.check_box : Icons.check_box_outline_blank,
                         size: 12,
-                        color: Colors.white,
+                        color: _textColor,
                       ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           subtask.content,
-                          style: GoogleFonts.figtree(fontSize: 9, color: Colors.white70),
+                          style: GoogleFonts.figtree(fontSize: 9, color: _textColor.withValues(alpha: 0.7)),
                           softWrap: true,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -666,7 +668,7 @@ class _BoardPageState extends State<BoardPage> {
             ),
           ),
           padding: const EdgeInsets.all(8),
-          child: Text(task.title, style: GoogleFonts.figtree(fontSize: 11, color: Colors.white)),
+          child: Text(task.title, style: GoogleFonts.figtree(fontSize: 11, color: _textColor)),
         ),
       ),
     );
@@ -728,11 +730,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: theme.gradientMid,
-        title: Text('Delete task', style: GoogleFonts.figtree(color: Colors.white)),
-        content: Text('Delete "${widget.editTask!.title}"?', style: GoogleFonts.figtree(color: Colors.white70)),
+        title: Text('Delete task', style: GoogleFonts.figtree(color: _textColor)),
+        content: Text('Delete "${widget.editTask!.title}"?', style: GoogleFonts.figtree(color: _textColor.withValues(alpha: 0.7))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Cancel', style: GoogleFonts.figtree(color: Colors.white))),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Delete', style: GoogleFonts.figtree(color: Colors.white))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Cancel', style: GoogleFonts.figtree(color: _textColor))),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Delete', style: GoogleFonts.figtree(color: _textColor))),
         ],
       ),
     );
@@ -800,54 +802,54 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     children: [
                       Row(
                         children: [
-                          Text(widget.editTask != null ? 'Edit task' : 'New task', style: GoogleFonts.figtree(fontWeight: FontWeight.w700, fontSize: 22, color: Colors.white)),
+                          Text(widget.editTask != null ? 'Edit task' : 'New task', style: GoogleFonts.figtree(fontWeight: FontWeight.w700, fontSize: 22, color: _textColor)),
                     const Spacer(),
                     if (widget.editTask != null) ...[
                       IconButton(
-                        icon: Icon(Icons.check, size: 20, color: Colors.white.withValues(alpha: 0.9)),
+                        icon: Icon(Icons.check, size: 20, color: _textColor.withValues(alpha: 0.9)),
                         onPressed: _save,
                       ),
                       IconButton(
-                        icon: Icon(Icons.share, size: 18, color: Colors.white.withValues(alpha: 0.8)),
+                        icon: Icon(Icons.share, size: 18, color: _textColor.withValues(alpha: 0.8)),
                         onPressed: _shareTask,
                       ),
                       IconButton(
-                        icon: Icon(Icons.delete_outline, size: 20, color: Colors.white.withValues(alpha: 0.7)),
+                        icon: Icon(Icons.delete_outline, size: 20, color: _textColor.withValues(alpha: 0.7)),
                         onPressed: () => _confirmDeleteInEdit(),
                       ),
                     ],
                   ],
                 ),
                 const SizedBox(height: 20),
-                Text('Task name', style: GoogleFonts.figtree(color: Colors.white, fontWeight: FontWeight.w600)),
+                Text('Task name', style: GoogleFonts.figtree(color: _textColor, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: titleController,
-                  cursorColor: const Color(0xFFFFB6C1),
+                  cursorColor: _textColor.withValues(alpha: 0.5),
                   cursorWidth: 3,
-                  style: GoogleFonts.figtree(color: Colors.white),
+                  style: GoogleFonts.figtree(color: _textColor),
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.15),
                     hintText: 'What is on your mind?',
-                    hintStyle: GoogleFonts.figtree(color: Colors.white.withValues(alpha: 0.5)),
+                    hintStyle: GoogleFonts.figtree(color: _textColor.withValues(alpha: 0.5)),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('Importance', style: GoogleFonts.figtree(color: Colors.white, fontWeight: FontWeight.w600)),
+                Text('Importance', style: GoogleFonts.figtree(color: _textColor, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Directionality(
                   textDirection: TextDirection.rtl,
                   child: DropdownMenu<TaskStatus>(
                     initialSelection: selectedStatus,
                     expandedInsets: EdgeInsets.zero,
-                    textStyle: GoogleFonts.figtree(color: Colors.white),
+                    textStyle: GoogleFonts.figtree(color: _textColor),
                     inputDecorationTheme: InputDecorationTheme(
                       filled: true,
                       fillColor: Colors.white.withValues(alpha: 0.15),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      suffixIconColor: Colors.white,
+                      suffixIconColor: _textColor.withValues(alpha: 0.7),
                     ),
                     menuStyle: MenuStyle(
                       elevation: WidgetStateProperty.all(0),
@@ -866,7 +868,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                         label: s.label,
                         style: ButtonStyle(
                           backgroundColor: WidgetStateProperty.all(itemColors[s]!.withValues(alpha: 0.7)),
-                          foregroundColor: WidgetStateProperty.all(Colors.white),
+                          foregroundColor: WidgetStateProperty.all(_textColor),
                           padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 4)),
                           shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                         ),
@@ -878,38 +880,38 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('Notes', style: GoogleFonts.figtree(color: Colors.white, fontWeight: FontWeight.w600)),
+                Text('Notes', style: GoogleFonts.figtree(color: _textColor, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: notesController,
                   maxLines: 5,
-                  cursorColor: const Color(0xFFFFB6C1),
+                  cursorColor: _textColor.withValues(alpha: 0.5),
                   cursorWidth: 3,
-                  style: GoogleFonts.figtree(color: Colors.white),
+                  style: GoogleFonts.figtree(color: _textColor),
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.15),
                     hintText: 'Write anything...',
-                    hintStyle: GoogleFonts.figtree(color: Colors.white.withValues(alpha: 0.5)),
+                    hintStyle: GoogleFonts.figtree(color: _textColor.withValues(alpha: 0.5)),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('Subtasks', style: GoogleFonts.figtree(color: Colors.white, fontWeight: FontWeight.w600)),
+                Text('Subtasks', style: GoogleFonts.figtree(color: _textColor, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: subtaskController,
-                        cursorColor: const Color(0xFFFFB6C1),
+                        cursorColor: _textColor.withValues(alpha: 0.5),
                         cursorWidth: 3,
-                        style: GoogleFonts.figtree(color: Colors.white),
+                        style: GoogleFonts.figtree(color: _textColor),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: Colors.white.withValues(alpha: 0.15),
                           hintText: 'Add a subtask',
-                          hintStyle: GoogleFonts.figtree(color: Colors.white.withValues(alpha: 0.5)),
+                          hintStyle: GoogleFonts.figtree(color: _textColor.withValues(alpha: 0.5)),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                         ),
                         onSubmitted: (_) => _addSubtaskToList(),
@@ -926,7 +928,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                       dense: true,
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.circle, size: 6, color: Colors.white),
-                      title: Text(entry.value, style: GoogleFonts.figtree(color: Colors.white)),
+                      title: Text(entry.value, style: GoogleFonts.figtree(color: _textColor)),
                       trailing: IconButton(
                         icon: const Icon(Icons.close, size: 18, color: Colors.white),
                         onPressed: () => setState(() => subtasks.removeAt(entry.key)),
@@ -941,7 +943,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     onPressed: saving ? null : _save,
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white.withValues(alpha: 0.25),
-                      foregroundColor: Colors.white,
+                      foregroundColor: _textColor,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
